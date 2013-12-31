@@ -237,36 +237,42 @@
           el.detach().appendTo(rootElement);
         }
 
-        if (/pop/i.test(settings.animation)) {
-          css.top = $(window).scrollTop() - el.data('offset') + 'px';
-          var end_css = {
-            top: $(window).scrollTop() + el.data('css-top') + 'px',
-            opacity: 1
-          };
+        var animData = getAnimationData(settings.animation);
+        if (!animData.animate) {
+          // no animation => don't lock
+          this.locked = false;
+        } else { 
+          if (animData.pop) {
+            css.top = $(window).scrollTop() - el.data('offset') + 'px';
+            var end_css = {
+              top: $(window).scrollTop() + el.data('css-top') + 'px',
+              opacity: 1
+            };
 
-          return this.delay(function () {
-            return el
-              .css(css)
-              .animate(end_css, settings.animation_speed, 'linear', function () {
-                this.locked = false;
-                el.trigger('opened');
-              }.bind(this))
-              .addClass('open');
-          }.bind(this), settings.animation_speed / 2);
-        }
+            return this.delay(function () {
+              return el
+                .css(css)
+                .animate(end_css, settings.animation_speed, 'linear', function () {
+                  this.locked = false;
+                  el.trigger('opened');
+                }.bind(this))
+                .addClass('open');
+            }.bind(this), settings.animation_speed / 2);
+          }
 
-        if (/fade/i.test(settings.animation)) {
-          var end_css = {opacity: 1};
+          if (animData.fade) {
+            var end_css = {opacity: 1};
 
-          return this.delay(function () {
-            return el
-              .css(css)
-              .animate(end_css, settings.animation_speed, 'linear', function () {
-                this.locked = false;
-                el.trigger('opened');
-              }.bind(this))
-              .addClass('open');
-          }.bind(this), settings.animation_speed / 2);
+            return this.delay(function () {
+              return el
+                .css(css)
+                .animate(end_css, settings.animation_speed, 'linear', function () {
+                  this.locked = false;
+                  el.trigger('opened');
+                }.bind(this))
+                .addClass('open');
+            }.bind(this), settings.animation_speed / 2);
+          }
         }
 
         return el.css(css).show().css({opacity: 1}).addClass('open').trigger('opened');
@@ -275,7 +281,7 @@
       var settings = this.settings;
 
       // should we animate the background?
-      if (/fade/i.test(settings.animation)) {
+      if (getAnimationData(settings.animation).fade) {
         return el.fadeIn(settings.animation_speed / 2);
       }
 
@@ -286,33 +292,40 @@
       // is modal
       if (css) {
         var settings = el.data('reveal-init');
-        if (/pop/i.test(settings.animation)) {
-          var end_css = {
-            top: - $(window).scrollTop() - el.data('offset') + 'px',
-            opacity: 0
-          };
+        var animData = getAnimationData(settings.animation);
 
-          return this.delay(function () {
-            return el
-              .animate(end_css, settings.animation_speed, 'linear', function () {
-                this.locked = false;
-                el.css(css).trigger('closed');
-              }.bind(this))
-              .removeClass('open');
-          }.bind(this), settings.animation_speed / 2);
-        }
+        if (!animData.animate) {
+          //no animation => no lock
+          this.locked = false;
+        } else {
+          if (animData.pop) {
+            var end_css = {
+              top: - $(window).scrollTop() - el.data('offset') + 'px',
+              opacity: 0
+            };
 
-        if (/fade/i.test(settings.animation)) {
-          var end_css = {opacity: 0};
+            return this.delay(function () {
+              return el
+                .animate(end_css, settings.animation_speed, 'linear', function () {
+                  this.locked = false;
+                  el.css(css).trigger('closed');
+                }.bind(this))
+                .removeClass('open');
+            }.bind(this), settings.animation_speed / 2);
+          }
 
-          return this.delay(function () {
-            return el
-              .animate(end_css, settings.animation_speed, 'linear', function () {
-                this.locked = false;
-                el.css(css).trigger('closed');
-              }.bind(this))
-              .removeClass('open');
-          }.bind(this), settings.animation_speed / 2);
+          if (animData.fade) {
+            var end_css = {opacity: 0};
+
+            return this.delay(function () {
+              return el
+                .animate(end_css, settings.animation_speed, 'linear', function () {
+                  this.locked = false;
+                  el.css(css).trigger('closed');
+                }.bind(this))
+                .removeClass('open');
+            }.bind(this), settings.animation_speed / 2);
+          }
         }
 
         return el.hide().css(css).removeClass('open').trigger('closed');
@@ -321,7 +334,7 @@
       var settings = this.settings;
 
       // should we animate the background?
-      if (/fade/i.test(settings.animation)) {
+      if (getAnimationData(settings.animation).fade) {
         return el.fadeOut(settings.animation_speed / 2);
       }
 
@@ -370,4 +383,21 @@
 
     reflow : function () {}
   };
+
+  /*
+   * getAnimationData('popAndFade') // {animate: true,  pop: true,  fade: true}
+   * getAnimationData('fade')       // {animate: true,  pop: false, fade: true}
+   * getAnimationData('pop')        // {animate: true,  pop: true,  fade: false}
+   * getAnimationData('foo')        // {animate: false, pop: false, fade: false}
+   * getAnimationData(null)         // {animate: false, pop: false, fade: false}
+   */
+  function getAnimationData(str) {
+    var fade = /fade/i.test(str);
+    var pop = /pop/i.test(str);
+    return {
+      animate: fade || pop,
+      pop: pop,
+      fade: fade
+    };
+  }
 }(jQuery, this, this.document));
